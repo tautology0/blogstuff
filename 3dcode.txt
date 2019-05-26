@@ -1,0 +1,164 @@
+; attempt at 3d stuff in assm
+; © Dave Lodge June 1994
+
+Type Utility
+
+OS_WriteI=256
+
+MACRO draw x,y
+   mov  0,#5
+   mov  1,x
+   mov  2,y
+   swi  OS_Plot
+MEND
+
+MACRO move x,y
+   mov  0,#4
+   mov  1,x
+   mov  2,y
+   swi  OS_Plot
+MEND
+
+MACRO push list
+   stmfd 13!,{list}
+MEND
+
+MACRO pull list
+   ldmfd 13!,{list}^
+MEND
+
+.start  swi     OS_WriteI+22
+        swi     OS_WriteI+15    ; reserve enuff screen memory
+        swi     OS_WriteI+22    ; for 2 banks
+        swi     OS_WriteI+12
+        swi     OS_WriteI+29
+        swi     OS_WriteI+128
+        swi     OS_WriteI+2
+        swi     OS_WriteI+0
+        swi     OS_WriteI+2
+        swi     OS_RemoveCursors
+        mov     0,#229
+        mov     1,#4
+        flts    F0,0
+        flts    F1,1
+        fdvs    F0,F0,F1
+        adr     12,radpo
+        stfs    F0,[12]
+        mov     1,#0
+        ldr     11,pts
+        ldr     10,lines
+        bl	plot
+        swi	OS_ReadC 
+.lp     bl      cls
+	ldr	4,angle
+	add    	4,4,#4
+	str	4,angle
+        bl      plot
+        swi     XOS_ReadEscapeState
+        swics   XOS_Exit
+        ;swi	OS_ReadC
+        b       lp
+
+.cls    push    14
+        eor     3,1,#2
+        mov     0,#113
+        swi     OS_Byte
+        mov     0,#112
+        mov	1,3
+        swi     OS_Byte
+	mov	0,#19
+        swi	OS_Byte  
+        swi	OS_WriteI+12
+        mov	1,3
+        pull    pc
+
+.plot   push    1,14
+        ldr     4,angle
+        flts    f4,4
+        ldfs    f2,[12]
+        fdvs    f4,f4,f2
+        coss    f5,f4
+        sins    f6,f4
+        adr     9,liness
+        adr     8,ptss
+        mov     3,10,LSL #2
+        add     3,3,9
+.lup    swi     XOS_ReadEscapeState
+        swics   XOS_Exit
+        ldr     7,[9],#4        ; offset for 1st start
+        ldr     4,[8,7]         ; x
+        add     7,7,#4
+        ldr     5,[8,7]         ; y
+        add     7,7,#4
+        ldr     6,[8,7]         ; z
+        bl      rotatex
+        move    4,5
+        ldr     7,[9],#4
+        ldr     4,[8,7]         ; x
+        add     7,7,#4
+        ldr     5,[8,7]         ; y
+        add     7,7,#4
+        ldr     6,[8,7]         ; z
+        bl      rotatex
+        draw    4,5 
+        cmp     9,3
+        blt     lup
+        pull    1,pc
+
+.rotatex
+        push    14
+        flts    f0,4
+        flts    f1,5
+        flts    f2,6
+        mvfs    f3,f1
+        fmls    f4,f1,f5
+        mvfs    f1,f4
+        fmls    f4,f2,f6
+        sufs    f1,f1,f4
+        fmls    f4,f2,f5
+        mvfs    f2,f4
+        fmls    f4,f3,f6
+        adfs    f2,f2,f4
+	mvfs	f3,f0
+        fmls    f4,f0,f5
+        mvfs    f0,f4
+        fmls    f4,f2,f6
+        adfs    f0,f0,f4
+        fmls    f4,f2,f5
+        mvfs    f2,f4
+        fmls    f4,f3,f6
+        sufs    f2,f2,f4
+	mvfs	f3,f0
+        fmls    f4,f0,f5
+        mvfs    f0,f4
+        fmls    f4,f1,f6
+        sufs    f0,f0,f4
+        fmls    f4,f1,f5
+        mvfs    f1,f4
+        fmls    f4,f3,f6
+        adfs    f1,f1,f4
+	
+;        sqts	f3,#2
+;        dvfs	f4,f2,f3
+;        adfs	f0,f0,f4
+;        adfs	f1,f1,f4
+
+        fixs	4,f0
+        fixs    5,f1
+        fixs    6,f2
+        pull    pc
+
+.pts    &8              ; no_points
+.lines  &24             ; no_lines
+.screen &0
+.angle  &0
+.radpo	&0,0,0 
+.ptss   &-100,-100,-100	; 0
+        & 100,-100,-100	; 12
+        & 100, 100,-100 ; 24
+        &-100, 100,-100 ; 36
+        &-100,-100, 100 ; 48
+        & 100,-100, 100 ; 60
+        & 100, 100, 100 ; 72
+        &-100, 100, 100 ; 84
+.liness &0,12,12,24,24,36,36,0,48,60,60,72,72,84,84,48,0,48,12,60,24,72,36,84
