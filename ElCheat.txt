@@ -1,5 +1,4 @@
-; Zelanites cheat
-
+; Elite "cheat"
 ; Dave
 
 Type Module
