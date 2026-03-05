@@ -1,0 +1,43 @@
+org &2000
+
+
+Start:
+			ld hl,COLOUR
+			ld de,COLOUR+1
+			ld (hl),&07
+			ld bc,SCRSIZE
+			ldir
+
+Startloop:
+			ld hl,Frames	; Set to start of first frame
+			ld a,5			; frame number
+Aniloop:
+			ld bc,SCRSIZE	; Screen memory size
+			ld de,SCREEN	; Screen memory
+			ldir				; copy stuff
+			ld b,25			; delay to get animation right
+			call delay
+			dec a			; check to see whether we should repeat frame
+			jp nz, Aniloop
+			jp Start 
+			
+delay:	push af
+			ld de,(delaytime)
+delaylp:	call DLY12
+			dec de
+         ld a, d
+         or e
+         jr nz, delaylp
+			pop af
+         ret
+
+COLOUR:		EQU &d800
+SCREEN:		EQU &d000
+SCRSIZE:		EQU &3e7
+DLY12:		EQU &0996
+delaytime:  DEFW &40
+Frames:     MDAT "rick/frame0.bin"
+frame1:     MDAT "rick/frame1.bin"
+frame2:     MDAT "rick/frame2.bin"
+frame3:     MDAT "rick/frame3.bin"
+frame4:     MDAT "rick/frame4.bin"
