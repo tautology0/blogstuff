@@ -3,7 +3,6 @@
 import statistics
 import random
 import math
-import dice
 import names_generator
 import os
 import pickle
